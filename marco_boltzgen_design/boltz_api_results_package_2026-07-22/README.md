@@ -71,3 +71,31 @@ Key files:
   negative margins indicate an off-target SRCR prediction scored better than MARCO by that metric.
 
 Computational predictions should be used for prioritization, not as final binding proof.
+
+## Reusing this package in the combined 11,700-design screen
+
+The Top50 counter-screen can be summarized with the common pipeline tool without
+renaming its Boltz API columns:
+
+```bash
+cd marco_boltzgen_design
+python scripts/rank_specificity.py \
+  --predictions boltz_api_results_package_2026-07-22/specificity_top50/tables/validation_metrics.csv \
+  --min-offtargets 3 \
+  --out results/api_top50_specificity.csv
+```
+
+`--min-offtargets 3` describes this package's three negative targets; it does
+not make the result equivalent to the recommended nine-off-target production
+panel. When combining these 3,700 designs with the 8,000 BoltzGen designs:
+
+1. deduplicate by exact amino-acid sequence while retaining `design_source`;
+2. apply the same sequence/developability calculations to both sources;
+3. cluster sequences before selecting counter-screen representatives;
+4. re-predict positives and negatives with identical constructs and settings;
+5. use `--min-offtargets 9` only after all nine negative targets are present.
+
+See [`../README.md`](../README.md#step-7--in-silico-specificity-screen)
+for the complete staged funnel and parameter guidance, and
+[`../PIPELINE.md`](../PIPELINE.md#stage-4--specificity-counter-screen-hpc--local)
+for the formal command-oriented workflow.
