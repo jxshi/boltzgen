@@ -14,13 +14,14 @@ De novo VHH (nanobody) design against the SRCR domain of **human MARCO** (UniPro
 6. [Step 4 — HPC Production](#step-4--hpc-production)
 7. [Step 5 — Collect & Merge Metrics](#step-5--collect--merge-metrics)
 8. [Step 6 — Rank & Filter](#step-6--rank--filter)
-9. [Step 7 — CDR3 Novelty Check](#step-7--cdr3-novelty-check)
-10. [Step 8 — AF2 Validation](#step-8--af2-validation)
-11. [Interface Strategy Sets](#interface-strategy-sets)
-12. [Key Scripts Reference](#key-scripts-reference)
-13. [BoltzProt-1 Developability Flags](#boltzprot-1-developability-flags)
-14. [SAbDab Novelty Cache](#sabdab-novelty-cache)
-15. [Troubleshooting](#troubleshooting)
+9. [Step 7 — In-silico Specificity Screen](#step-7--in-silico-specificity-screen)
+10. [Step 8 — CDR3 Novelty Check](#step-8--cdr3-novelty-check)
+11. [Step 9 — AF2 Validation](#step-9--af2-validation)
+12. [Interface Strategy Sets](#interface-strategy-sets)
+13. [Key Scripts Reference](#key-scripts-reference)
+14. [BoltzProt-1 Developability Flags](#boltzprot-1-developability-flags)
+15. [SAbDab Novelty Cache](#sabdab-novelty-cache)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -49,10 +50,10 @@ NUM_DESIGNS=60000 BUDGET=150 sbatch scripts/run_hpc_campaign.sh \
 ## 2. Pipeline Overview
 
 ```
-Stage 0          Stage 1          Stage 2          Stage 3          Stage 4          Stage 5
-─────────        ─────────        ─────────        ─────────        ─────────        ─────────
-Validate   →     HPC Design  →    Collect &   →    Rank &      →    Novelty   →    AF2
-(specs)         (SLURM)           Merge            Filter          Check          Validation
+Stage 0       Stage 1       Stage 2       Stage 3       Stage 4       Stage 5       Stage 6
+────────      ────────      ────────      ────────      ────────      ────────      ────────
+Validate  →   HPC Design →  Collect &  →  Rank &    →  Specificity → Novelty   →  AF2
+(specs)      (SLURM)        Merge         Filter       Screen        Check         Validation
 ```
 
 | Stage | What | Where | Output |
@@ -61,8 +62,9 @@ Validate   →     HPC Design  →    Collect &   →    Rank &      →    Nove
 | **1 — Design** | `boltzgen run` 5-step pipeline on SLURM | HPC (GPU) | CIF + NPZ in `runs/<name>/` |
 | **2 — Collect** | Gather outputs from HPC, merge metrics | Local | `results/all_metrics.csv` |
 | **3 — Rank** | `rank_designs.py` + developability filters | Local | `results/ranked_candidates.csv` |
-| **4 — Novelty** | `novelty_check.py` — CDR3 edit distance ≥ 4 from SAbDab | Local | `results/novelty_checked.csv` |
-| **5 — Validate** | `validate_designs.py` (AF2 backfold) | Local/HPC | `results/af_validation.csv` |
+| **4 — Specificity** | Re-predict against MARCO and a negative target panel | HPC + Local | `results/specificity_ranked.csv` |
+| **5 — Novelty** | `novelty_check.py` — CDR3 edit distance ≥ 4 from SAbDab | Local | `results/novelty_checked.csv` |
+| **6 — Validate** | `validate_designs.py` (AF2 backfold) | Local/HPC | `results/af_validation.csv` |
 
 **Automatic post-processing:** Both `run_hpc_campaign.sh` and `run_nanobody_campaign.sh` automatically apply two hard-gate developability filters after generation — removing any design with an **N-glycosylation sequon** (NXS/T motif) and any design with a **proline in CDR3** (last 18% of sequence) — before ranking.
 
@@ -426,7 +428,138 @@ print(df[['design_id','final_score','iptm','min_interaction_pae',
 
 ---
 
-## Step 7 — CDR3 Novelty Check
+## Step 7 — In-silico Specificity Screen
+
+High MARCO confidence alone does **not** demonstrate specificity. Re-predict the
+top 200–500 VHH sequences against the same positive and negative targets using
+the same complex-prediction settings. A useful initial panel is human and mouse
+MARCO as positives and MSR1/SCARA1, SCARA3, SCARA5, CD163, CD5L, MRC1, TREM2,
+MERTK, and AXL as off-targets. Choose constructs containing the homologous,
+solvent-exposed domain rather than comparing unrelated full-length constructs.
+
+### Recommended funnel for the existing 8,000 + 3,700 designs
+
+Do not immediately run all 11,700 sequences against every off-target. Use a
+staged funnel so that the expensive counter-screen is spent on credible and
+diverse sequences:
+
+1. **Unify and deduplicate by exact amino-acid sequence.** Preserve a stable
+   `design_id`, `design_source` (`boltzgen_8000` or `boltz_api_3700`), original
+   rank, design target/species, epitope set, and paths to CIF/metadata. Do not
+   merge records only by candidate name; identifiers can collide across runs.
+2. **Apply source-neutral quality gates.** Recalculate sequence descriptors from
+   the sequence for both sources, rather than trusting differently named source
+   columns. As a balanced first pass use design ipTM ≥0.45, design interface PAE
+   ≤12–15 Å, no N-glycosylation sequon, no extra CDR cysteine, acceptable length,
+   charge and hydrophobic/aromatic patches. Retain failed rows with failure
+   reasons for audit instead of deleting them.
+3. **Cluster for diversity before counter-screening.** Cluster full VHHs at about
+   90% identity and CDR3s at about 70–80% identity, then keep several members per
+   cluster across source, epitope and human/mouse/cross-reactive strata. A useful
+   first target is 1,000–2,000 quality-passing sequences, followed by 300–500
+   diverse representatives. These are capacity targets, not biological cutoffs.
+4. **Run a cheap homolog screen on the 1,000–2,000 pool.** Predict human MARCO,
+   mouse MARCO, MSR1/SCARA1 and SCARA5 with identical settings and multiple
+   seeds. Advance approximately 200–500 candidates with strong MARCO confidence,
+   positive ΔipTM/ΔPAE, no obvious homolog hit, and broad cluster coverage.
+5. **Run the full negative panel on the 200–500 shortlist.** Add CD163, CD5L,
+   MRC1, TREM2, MERTK and AXL, use at least two independent model families where
+   feasible, and keep per-seed rows rather than only the best seed. Use
+   `rank_specificity.py --min-offtargets 9` for the production summary.
+6. **Select a Pareto-balanced experimental panel.** Allocate the final 30–100
+   constructs across high specificity margin, human/mouse cross-reactivity,
+   epitope diversity, sequence-cluster diversity, both design sources and
+   developability. Do not simply synthesize the top 30 values from one scalar
+   score. Confirm by MARCO binding, homolog counter-binding, irrelevant-protein
+   controls and MARCO-positive/negative cell assays.
+
+The checked-in Boltz API package already contains a four-target counter-screen
+for its top 50 (`MARCO`, `MSR1/SCARA1`, `SCARA5`, and `CD163`). Its
+`validation_metrics.csv` can now be passed directly to `rank_specificity.py`:
+
+```bash
+python scripts/rank_specificity.py \
+  --predictions boltz_api_results_package_2026-07-22/specificity_top50/tables/validation_metrics.csv \
+  --min-offtargets 3 \
+  --out results/api_top50_specificity.csv
+```
+
+The script recognizes both its canonical schema and the package aliases
+`candidate_id`, `target_id`, `intended_target`, `off_target`, and
+`interface_pae_mean`. The existing four-target result is useful evidence but is
+not a complete nine-off-target panel. The 8,000 BoltzGen designs should first be
+exported to the same long format after their positive/negative re-predictions;
+their original design-time MARCO score is not an off-target specificity result.
+
+Collect all predictions in a long-form CSV. Repeat a target with different
+`model` values when using Boltz, AF3, or Chai-1; the script averages replicates
+or model predictions for each design/target pair before calculating the margin.
+
+```csv
+design_id,target,target_role,model,iptm,interface_pae,buried_surface_area,hbonds,salt_bridges,shape_complementarity
+vhh_001,human_MARCO,positive,boltz,0.72,7.1,840,7,2,0.71
+vhh_001,mouse_MARCO,positive,boltz,0.68,8.0,790,6,2,0.68
+vhh_001,MSR1,offtarget,boltz,0.21,18.2,310,2,0,0.42
+```
+
+Rank the resulting panel:
+
+```bash
+python scripts/rank_specificity.py \
+  --predictions results/target_panel_predictions.csv \
+  --positive-reducer min \
+  --offtarget-iptm-threshold 0.30 \
+  --min-offtargets 9 \
+  --out results/specificity_ranked.csv
+```
+
+The fixed unit-scaled interface score is:
+
+```text
+0.35 × ipTM + 0.20 × inverted interface PAE + 0.15 × buried surface area
++ 0.10 × H-bonds + 0.10 × salt bridges + 0.10 × shape complementarity
+```
+
+`delta_specificity` is the conservative (lowest) positive MARCO score minus
+the best off-target score. `offtarget_hit_count` is a simple promiscuity index.
+For a cross-reactive campaign, keep the default `--positive-reducer min`; for a
+species-selective campaign, label only the desired species as `positive` and
+the other species as `offtarget`. Missing optional interface measurements are
+excluded and the available weights are renormalized; inspect
+`minimum_metric_coverage` rather than treating a partial score as equally
+informative. `iptm` and `interface_pae` are always required. A candidate with no
+off-target rows is marked as an incomplete panel and cannot pass. Do not interpret
+the output as proof of specificity: prioritize a large margin and zero hits,
+then confirm the shortlist experimentally with orthogonal binding and cell-panel
+assays. Thresholds such as positive ipTM ≥0.5, interface PAE ≤10–12 Å, and
+off-target ipTM ≤0.3 are triage heuristics that should be calibrated to controls.
+
+### Are the defaults optimal?
+
+No universal cutoff is optimal across predictors, target constructs, and model
+versions. The defaults are deliberately moderate **starting points**, not fitted
+MARCO decision boundaries:
+
+| Parameter | Default | Recommended use |
+|-----------|---------|-----------------|
+| `--positive-reducer` | `min` | Keep for human/mouse cross-reactivity; use one declared positive for species selectivity. |
+| `--min-positive-iptm` | `0.50` | Exploratory: 0.45; balanced: 0.50; strict: 0.55–0.60. |
+| `--max-positive-pae` | `12 Å` | Tighten to 10 Å after confirming enough positive controls survive. |
+| `--offtarget-iptm-threshold` | `0.30` | Lower to 0.25 for conservative polyspecificity triage; do not raise without controls. |
+| `--min-specificity-margin` | `0.15` | Use 0.10 for broad discovery and 0.20 for a strict shortlist. This is a composite-score margin, not ΔipTM. |
+| `--min-offtargets` | `1` | Minimal smoke-test default; set to the actual panel size (9 for the panel above) in production. |
+
+Tune cutoffs on known MARCO binders, non-binders, irrelevant VHHs, and deliberately
+challenging homologs. Apply the identical target construct, MSA/template policy,
+seed count, and model ensemble to positives and negatives. Prefer selecting a
+Pareto set over repeatedly changing weights to promote favored candidates. With
+experimental labels, choose thresholds using held-out precision/recall or ROC
+analysis; without labels, report sensitivity analyses at exploratory, balanced,
+and strict settings instead of claiming that a single default is validated.
+
+---
+
+## Step 8 — CDR3 Novelty Check
 
 Flags any design whose CDR3 is **edit-distance < 4** from a known SAbDab antibody. Per BoltzProt-1: *"every recovered design has a minimum CDR3 edit distance of at least four to its closest SAbDab match."*
 
@@ -465,7 +598,7 @@ print(f"Novel candidates: {len(novel)} / {len(df)}")
 
 ---
 
-## Step 8 — AF2 Validation
+## Step 9 — AF2 Validation
 
 Validates that designed binder sequences back-fold correctly to the predicted structures:
 
