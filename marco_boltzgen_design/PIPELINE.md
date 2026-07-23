@@ -9,10 +9,10 @@
 ## Pipeline Overview
 
 ```
-Stage 0          Stage 1          Stage 2          Stage 3          Stage 4
-─────────        ─────────        ─────────        ─────────        ─────────
-Validation  →   HPC Design   →   Collect &   →   Rank &       →   AF2
-(pre-flight)      (SLURM)          Merge           Filter         Validation
+Stage 0       Stage 1       Stage 2       Stage 3       Stage 4       Stage 5
+────────      ────────      ────────      ────────      ────────      ────────
+Validation →  HPC Design →  Collect &  →  Rank &    →  Specificity → AF2
+(pre-flight)   (SLURM)       Merge         Filter       Screen        Validation
 ```
 
 | Stage | What | Where | Output |
@@ -21,7 +21,8 @@ Validation  →   HPC Design   →   Collect &   →   Rank &       →   AF2
 | **1 — Design** | `boltzgen run` 5-step pipeline on SLURM | HPC (GPU node) | CIF + NPZ in `runs/<name>/` |
 | **2 — Collect** | Gather outputs from HPC, merge metrics | Local | `results/all_metrics.csv` |
 | **3 — Rank** | `rank_designs.py` + developability filters | Local | `results/ranked_candidates.csv` |
-| **4 — Validate** | `validate_designs.py` (AF2 backfold) | Local/HPC | `results/af_validation.csv` |
+| **4 — Specificity** | MARCO positive/negative-target re-prediction and `rank_specificity.py` | HPC + Local | `results/specificity_ranked.csv` |
+| **5 — Validate** | `validate_designs.py` (AF2 backfold) | Local/HPC | `results/af_validation.csv` |
 
 ---
 
@@ -44,6 +45,7 @@ Validation  →   HPC Design   →   Collect &   →   Rank &       →   AF2
 │   ├── collect_campaign.sh            # ★ Gather + merge HPC outputs
 │   ├── rank_and_validate.sh           # ★ Rank + AF2 validation orchestrator
 │   ├── rank_designs.py               # Ranking + developability filter
+│   ├── rank_specificity.py           # Positive/off-target specificity summary
 │   ├── validate_designs.py           # AF2 backfold validation
 │   ├── aggregate_campaigns.py         # Cross-campaign metric aggregation
 │   └── find_marco_srcr_hotspots.py
@@ -60,7 +62,9 @@ Validation  →   HPC Design   →   Collect &   →   Rank &       →   AF2
 └── results/                          # Post-processing outputs
     ├── all_metrics.csv                # Stage 2: merged from all campaigns
     ├── ranked_candidates.csv          # Stage 3: scored + filtered
-    ├── af_validation.csv              # Stage 4: AF2 backfold results
+    ├── target_panel_predictions.csv   # Stage 4: long-form counter-screen metrics
+    ├── specificity_ranked.csv         # Stage 4: specificity summary
+    ├── af_validation.csv              # Stage 5: AF2 backfold results
     └── candidate_cifs/                # Top-ranked CIFs for experimental use
 ```
 
@@ -234,7 +238,59 @@ python scripts/rank_designs.py \
 
 ---
 
-## Stage 4 — AF2 Validation (Local)
+## Stage 4 — Specificity Counter-Screen (HPC + Local)
+
+The original MARCO design score is a positive-target confidence signal, not a
+specificity measurement. For the existing 8,000 BoltzGen and 3,700 Boltz API
+designs, use this staged funnel rather than predicting all 11,700 sequences
+against the full panel immediately:
+
+1. Merge both sources and deduplicate by exact amino-acid sequence while
+   preserving source, original ID, target/species, epitope and file paths.
+2. Recalculate common developability descriptors and apply balanced positive
+   gates (initially ipTM ≥0.45 and interface PAE ≤12–15 Å).
+3. Cluster full VHH sequences at approximately 90% identity and CDR3s at
+   70–80% identity; retain 1,000–2,000 quality-passing, source-balanced designs.
+4. Screen these first against human/mouse MARCO plus MSR1/SCARA1 and SCARA5,
+   using identical model settings and multiple seeds.
+5. Run the full nine-off-target panel on 200–500 diverse survivors: MSR1/SCARA1,
+   SCARA3, SCARA5, CD163, CD5L, MRC1, TREM2, MERTK and AXL.
+6. Select 30–100 experimental constructs as a Pareto panel spanning specificity,
+   cross-reactivity, epitope, sequence cluster, source and developability.
+
+Store one row per design/target/model-or-seed prediction:
+
+```csv
+design_id,target,target_role,model,iptm,interface_pae,buried_surface_area,hbonds,salt_bridges,shape_complementarity
+vhh_001,human_MARCO,positive,boltz_seed1,0.72,7.1,840,7,2,0.71
+vhh_001,MSR1,offtarget,boltz_seed1,0.21,18.2,310,2,0,0.42
+```
+
+Summarize a complete production panel with:
+
+```bash
+python scripts/rank_specificity.py \
+  --predictions results/target_panel_predictions.csv \
+  --positive-reducer min \
+  --min-positive-iptm 0.50 \
+  --max-positive-pae 12 \
+  --offtarget-iptm-threshold 0.30 \
+  --min-specificity-margin 0.15 \
+  --min-offtargets 9 \
+  --out results/specificity_ranked.csv
+```
+
+`positive-reducer=min` is intentionally conservative for human/mouse
+cross-reactivity. For a species-selective campaign, declare only the desired
+species as `positive` and the other as `offtarget`. Treat the numeric defaults
+as initial triage settings and calibrate them with known binders, non-binders,
+irrelevant VHHs and difficult homologs. Candidates with an incomplete negative
+panel cannot pass. See `README.md` Step 7 for the complete parameter-tuning and
+Boltz API `validation_metrics.csv` compatibility guide.
+
+---
+
+## Stage 5 — AF2 Validation (Local)
 
 Validates that the designed binder sequences **back-fold correctly** when predicted alone with AF2:
 
@@ -251,7 +307,8 @@ python scripts/validate_designs.py \
 - CA RMSD (AF2 vs BoltzGen design) < 2.5 Å
 - Mean PAE < 5.0 Å
 
-Designs passing AF validation are ready for experimental characterization.
+Designs passing both the specificity counter-screen and AF validation are ready
+for experimental characterization.
 
 ---
 
@@ -346,10 +403,30 @@ python scripts/rank_designs.py \
   --mouse-conserved "A:6,A:8,A:15,A:44,A:50,A:52,A:72,A:83" \
   --out results/ranked_candidates.csv
 
-# ── STAGE 4: AF2 validate ──
+# ── STAGE 4: specificity counter-screen ──
+# First generate results/target_panel_predictions.csv using identical settings
+# for MARCO positives and all declared off-targets.
+python scripts/rank_specificity.py \
+  --predictions results/target_panel_predictions.csv \
+  --positive-reducer min \
+  --min-offtargets 9 \
+  --out results/specificity_ranked.csv
+
+# ── STAGE 5: AF2 validate specificity-screened candidates ──
+# Merge the specificity columns back into the original metrics so binder
+# sequences and design metadata remain available to validate_designs.py.
+python - <<'PY'
+import pandas as pd
+ranked = pd.read_csv("results/ranked_candidates.csv")
+specificity = pd.read_csv("results/specificity_ranked.csv")
+ranked.merge(specificity, on="design_id", how="inner").sort_values(
+    ["specificity_pass", "delta_specificity"], ascending=False
+).to_csv("results/ranked_with_specificity.csv", index=False)
+PY
+
 python scripts/validate_designs.py \
   --complexes results/candidate_cifs \
-  --metrics results/ranked_candidates.csv \
+  --metrics results/ranked_with_specificity.csv \
   --top_n 50 \
   --method colabfold \
   --out results/af_validation.csv
