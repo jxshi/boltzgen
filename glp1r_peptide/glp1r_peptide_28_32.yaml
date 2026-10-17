@@ -1,0 +1,26 @@
+# GLP-1R peptide pilot for the BoltzGen peptide-anything protocol.
+# Run this YAML from any directory; file paths are resolved relative to this file.
+#
+# Prepared target chain R contains canonical human GLP-1R residues 29-423.
+# BoltzGen uses 1-based mmCIF label_seq_id, not UniProt/auth numbering:
+#   Q234 -> 206, W306 -> 278, R380 -> 352.
+# These sparse sites guide contact sampling but do not enforce peptide orientation
+# or prove agonism. Native GLP-1 is not present in the target file.
+
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            binding: 206,278,352
+      structure_groups: "all"
+

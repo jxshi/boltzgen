@@ -1,0 +1,15 @@
+residue	category	source_author_chain	source_author_number	source_label_chain	source_label_seq_id	prepared_label_chain	prepared_label_seq_id	api_index_0based	minimum_heavy_atom_distance_A	receptor_atom	peptide_atom	nearest_peptide_author_residue	nearest_peptide_label_seq_id	all_peptide_contacts_4p5A
+R190	requested_key_site	R	190	F	199	R	162	161	2.7785	NH2	OE2	E9	3	E9
+Q234	requested_key_site	R	234	F	243	R	206	205	3.1159	OE1	NE2	H7	1	H7
+T298	requested_key_site	R	298	F	307	R	270	269	2.4623	OG1	OG	S17	11	T13,S14,S17
+R299	requested_key_site	R	299	F	308	R	271	270	2.6687	NH1	OG	S17	11	S14,S17,S18,E21
+N300	requested_key_site	R	300	F	309	R	272	271	2.7246	N	OG	S14	8	G10,S14
+W306	requested_key_site	R	306	F	315	R	278	277	3.6124	CH2	NE2	H7	1	H7,G10,T11
+R310	requested_key_site	R	310	F	319	R	282	281	3.3274	CG	N	H7	1	H7
+R380	requested_key_site	R	380	F	389	R	352	351	2.6209	NH2	OD2	D15	9	T11,D15
+L384	requested_key_site	R	384	F	393	R	356	355	3.787	CD2	CG2	T11	5	A8,T11,F12,D15
+L388	requested_key_site	R	388	F	397	R	360	359	3.6925	CD1	CG	F12	6	A8,E9,F12
+L32	optional_ECD_context	R	32	F	41	R	4	3	2.9608	N	OE2	E21	15	E21,A24,A25,F28
+W39	optional_ECD_context	R	39	F	48	R	11	10	3.4207	CH2	NE	R36	30	F28,L32,R36
+Y69	optional_ECD_context	R	69	F	78	R	41	40	3.5496	CD1	CG2	V33	27	I29,L32,V33
+W91	optional_ECD_context	R	91	F	100	R	63	62	3.1345	CZ2	CG2	I29	23	K26,I29
