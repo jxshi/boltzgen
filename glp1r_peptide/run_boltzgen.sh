@@ -15,7 +15,7 @@ boltzgen run glp1r_peptide_central.yaml \
   --protocol peptide-anything \
   --num_designs 50 \
   --budget 10 \
-  --devices 1
+  --devices 2
 
 # After inspecting the smoke-test orientation, launch a larger central-length run.
 # Uncomment and adjust --devices for the local server.
@@ -24,7 +24,7 @@ boltzgen run glp1r_peptide_central.yaml \
 #   --protocol peptide-anything \
 #   --num_designs 10000 \
 #   --budget 100 \
-#   --devices 1
+#   --devices 2
 
 # Optional wider length exploration; do not run merely to increase candidate count.
 # boltzgen run glp1r_peptide_wide.yaml \
@@ -32,7 +32,7 @@ boltzgen run glp1r_peptide_central.yaml \
 #   --protocol peptide-anything \
 #   --num_designs 5000 \
 #   --budget 50 \
-#   --devices 1
+#   --devices 2
 
 # Resume an interrupted run by repeating its original command with --reuse.
 # Example:
@@ -41,6 +41,6 @@ boltzgen run glp1r_peptide_central.yaml \
 #   --protocol peptide-anything \
 #   --num_designs 10000 \
 #   --budget 100 \
-#   --devices 1 \
+#   --devices 2 \
 #   --reuse
 

@@ -42,7 +42,7 @@ boltzgen run glp1r_peptide_central.yaml \
   --protocol peptide-anything \
   --num_designs 50 \
   --budget 10 \
-  --devices 1
+  --devices 2
 ```
 
 确认结果格式、GPU运行和结合方向后，再进行主批次：
@@ -53,10 +53,10 @@ boltzgen run glp1r_peptide_central.yaml \
   --protocol peptide-anything \
   --num_designs 10000 \
   --budget 100 \
-  --devices 1
+  --devices 2
 ```
 
-若服务器有多张可用GPU，把`--devices 1`改为实际希望使用的数量。中断后用完全相同的命令并加`--reuse`恢复，避免换输出目录重新开始。
+当前命令按两张可用 GPU 配置为 `--devices 2`。中断后用完全相同的命令并加 `--reuse` 恢复，避免换输出目录重新开始。
 
 可先只生成并检查解析后的流水线配置：
 
@@ -66,7 +66,7 @@ boltzgen configure glp1r_peptide_central.yaml \
   --protocol peptide-anything \
   --num_designs 50 \
   --budget 10 \
-  --devices 1
+  --devices 2
 
 boltzgen execute runs/glp1r_28_32_configured
 ```
@@ -79,7 +79,7 @@ boltzgen run glp1r_peptide_wide.yaml \
   --protocol peptide-anything \
   --num_designs 5000 \
   --budget 50 \
-  --devices 1
+  --devices 2
 ```
 
 官方说明`--num_designs`是中间设计数量，`--budget`是经过质量和多样性筛选后的最终集合数量。这里的50/10用于流程和姿态验证，10000/100与5000/50是起步建议，不是模型要求；可按服务器吞吐量调整。
