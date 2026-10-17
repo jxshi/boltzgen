@@ -2,8 +2,10 @@
 
 本目录提供两个可直接用于 `peptide-anything` 的设计规格：
 
-- `glp1r_peptide_28_32.yaml`：主批次，28–32 aa。
-- `glp1r_peptide_25_35.yaml`：扩展批次，25–35 aa；建议在主批次方向检查后再运行。
+- `glp1r_peptide_central.yaml`：主批次，28–32 aa。
+- `glp1r_peptide_wide.yaml`：扩展批次，25–35 aa；建议在主批次方向检查后再运行。
+
+文件名特意不以 `_数字.yaml` 结尾；BoltzGen 将该格式保留给内部文件索引。
 
 两者读取 `reference/6X18_R_canonical.cif`。克隆仓库后进入本目录运行即可。配置中的受体链为 R；目标结构不包含天然 GLP-1、G 蛋白或其他辅助链。
 
@@ -27,7 +29,7 @@ BoltzGen的设计规格使用从1开始的mmCIF `label_seq_id`，不是PDB作者
 git clone https://github.com/jxshi/boltzgen.git
 cd boltzgen/glp1r_peptide
 boltzgen --version
-boltzgen check glp1r_peptide_28_32.yaml
+boltzgen check glp1r_peptide_central.yaml
 ```
 
 打开`check`产生的CIF，确认显示的目标是受体R链，并且高亮位置对应Q234、W306和R380。官方文档明确建议在计算前做这一步。
@@ -35,7 +37,7 @@ boltzgen check glp1r_peptide_28_32.yaml
 小批次技术与姿态测试：
 
 ```bash
-boltzgen run glp1r_peptide_28_32.yaml \
+boltzgen run glp1r_peptide_central.yaml \
   --output runs/glp1r_28_32_smoke \
   --protocol peptide-anything \
   --num_designs 50 \
@@ -46,7 +48,7 @@ boltzgen run glp1r_peptide_28_32.yaml \
 确认结果格式、GPU运行和结合方向后，再进行主批次：
 
 ```bash
-boltzgen run glp1r_peptide_28_32.yaml \
+boltzgen run glp1r_peptide_central.yaml \
   --output runs/glp1r_28_32_prod \
   --protocol peptide-anything \
   --num_designs 10000 \
@@ -59,7 +61,7 @@ boltzgen run glp1r_peptide_28_32.yaml \
 可先只生成并检查解析后的流水线配置：
 
 ```bash
-boltzgen configure glp1r_peptide_28_32.yaml \
+boltzgen configure glp1r_peptide_central.yaml \
   --output runs/glp1r_28_32_configured \
   --protocol peptide-anything \
   --num_designs 50 \
@@ -72,7 +74,7 @@ boltzgen execute runs/glp1r_28_32_configured
 扩展长度批次：
 
 ```bash
-boltzgen run glp1r_peptide_25_35.yaml \
+boltzgen run glp1r_peptide_wide.yaml \
   --output runs/glp1r_25_35_prod \
   --protocol peptide-anything \
   --num_designs 5000 \

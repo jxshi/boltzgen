@@ -1,5 +1,5 @@
 # Wider length exploration for the BoltzGen peptide-anything protocol.
-# Numbering and target preparation are identical to glp1r_peptide_28_32.yaml.
+# Numbering and target preparation are identical to glp1r_peptide_central.yaml.
 # Run only after checking the 28-32 aa smoke test and inspecting peptide direction.
 
 entities:
