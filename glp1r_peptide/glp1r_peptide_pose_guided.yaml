@@ -11,7 +11,7 @@
 
 entities:
   - file:
-      path: reference/6X18_R_GLP1_native.cif
+      path: reference/6X18_R_GLP1_pose.cif
       include:
         - chain:
             id: R

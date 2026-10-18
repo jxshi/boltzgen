@@ -7,10 +7,10 @@
 
 根据第一轮结构复核，新增两套下一轮配置：
 
-- `glp1r_peptide_native_pose.yaml`：推荐优先运行。保留 6X18 中天然 GLP-1 的 H7–D15 序列和位姿，重新设计其余位置。
+- `glp1r_peptide_pose_guided.yaml`：推荐优先运行。保留 6X18 中天然 GLP-1 的 H7–D15 序列和位姿，重新设计其余位置。文件名避开 BoltzGen 保留的 `_native` 子串。
 - `glp1r_peptide_agonist_motif.yaml`：de novo 探索方案。固定 N 端 `HAEGTFTSD`，设计后续 19–23 aa，并排除两个实验结构缺失环作为结合位点。
 
-第一轮最终 10 个候选全部以 C 端进入天然 H7 激活口袋，因此不建议直接扩大原始 `central` 批次。下一轮应先运行 `native_pose`，并用全新的输出目录。
+第一轮最终 10 个候选全部以 C 端进入天然 H7 激活口袋，因此不建议直接扩大原始 `central` 批次。下一轮应先运行 `pose_guided`，并用全新的输出目录。
 
 文件名特意不以 `_数字.yaml` 结尾；BoltzGen 将该格式保留给内部文件索引。
 
@@ -33,9 +33,9 @@ BoltzGen的设计规格使用从1开始的mmCIF `label_seq_id`，不是PDB作者
 下一轮天然位姿 smoke test：
 
 ```bash
-boltzgen check glp1r_peptide_native_pose.yaml
-boltzgen run glp1r_peptide_native_pose.yaml \
-  --output runs/glp1r_native_pose_smoke \
+boltzgen check glp1r_peptide_pose_guided.yaml
+boltzgen run glp1r_peptide_pose_guided.yaml \
+  --output runs/glp1r_pose_guided_smoke \
   --protocol peptide-anything \
   --num_designs 100 \
   --budget 20 \
