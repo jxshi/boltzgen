@@ -1,0 +1,30 @@
+# Native-pose GLP-1 redesign for the highest-confidence agonist-like geometry.
+#
+# Prepared native-pose reference chains:
+#   R = canonical GLP-1R residues 29-423
+#   P = native GLP-1(7-36), 30 aa
+#
+# Positions 1-9 of GLP-1 (HAEGTFTSD; native H7-D15) remain fixed in sequence and
+# geometry. Positions 10-30 are designable. This route explores sequence changes
+# around an experimentally observed agonist pose instead of asking de novo sampling
+# to discover peptide direction from an undirected binding-site label.
+
+entities:
+  - file:
+      path: reference/6X18_R_GLP1_native.cif
+      include:
+        - chain:
+            id: R
+        - chain:
+            id: P
+      binding_types:
+        - chain:
+            id: R
+            # Prepared label_seq_id values for ECD anchors and pocket sites.
+            binding: 4,11,41,63,162,206,270..272,278,282,352,356,360
+      design:
+        - chain:
+            id: P
+            res_index: 10..30
+      structure_groups: "all"
+

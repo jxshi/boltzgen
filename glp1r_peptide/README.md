@@ -5,6 +5,13 @@
 - `glp1r_peptide_central.yaml`：主批次，28–32 aa。
 - `glp1r_peptide_wide.yaml`：扩展批次，25–35 aa；建议在主批次方向检查后再运行。
 
+根据第一轮结构复核，新增两套下一轮配置：
+
+- `glp1r_peptide_native_pose.yaml`：推荐优先运行。保留 6X18 中天然 GLP-1 的 H7–D15 序列和位姿，重新设计其余位置。
+- `glp1r_peptide_agonist_motif.yaml`：de novo 探索方案。固定 N 端 `HAEGTFTSD`，设计后续 19–23 aa，并排除两个实验结构缺失环作为结合位点。
+
+第一轮最终 10 个候选全部以 C 端进入天然 H7 激活口袋，因此不建议直接扩大原始 `central` 批次。下一轮应先运行 `native_pose`，并用全新的输出目录。
+
 文件名特意不以 `_数字.yaml` 结尾；BoltzGen 将该格式保留给内部文件索引。
 
 两者读取 `reference/6X18_R_canonical.cif`。克隆仓库后进入本目录运行即可。配置中的受体链为 R；目标结构不包含天然 GLP-1、G 蛋白或其他辅助链。
@@ -22,6 +29,32 @@ BoltzGen的设计规格使用从1开始的mmCIF `label_seq_id`，不是PDB作者
 完整映射在 `reference/residue_mapping.tsv`。三个位置是稀疏的期望接触位点。它们不会强制每个位置同时接触，也不会强制肽 N 端进入口袋。
 
 ## 推荐执行顺序
+
+下一轮天然位姿 smoke test：
+
+```bash
+boltzgen check glp1r_peptide_native_pose.yaml
+boltzgen run glp1r_peptide_native_pose.yaml \
+  --output runs/glp1r_native_pose_smoke \
+  --protocol peptide-anything \
+  --num_designs 100 \
+  --budget 20 \
+  --devices 2
+```
+
+下一轮 N 端基序引导的 de novo smoke test：
+
+```bash
+boltzgen check glp1r_peptide_agonist_motif.yaml
+boltzgen run glp1r_peptide_agonist_motif.yaml \
+  --output runs/glp1r_agonist_motif_smoke \
+  --protocol peptide-anything \
+  --num_designs 200 \
+  --budget 20 \
+  --devices 2
+```
+
+以下原始配置保留用于结果追溯：
 
 先确认版本并检查规格：
 

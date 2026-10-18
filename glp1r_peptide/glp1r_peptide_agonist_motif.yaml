@@ -1,0 +1,30 @@
+# De novo, agonist-biased GLP-1R peptide design.
+#
+# The pilot placed the peptide C terminus in the native H7 pocket in 10/10 final
+# designs. Fixing the native GLP-1 H7-D15 segment at peptide positions 1-9 gives
+# the model sequence-level directionality that the original site-only YAML lacked.
+# The remaining 19-23 residues are designed, giving a total length of 28-32 aa.
+#
+# BoltzGen uses 1-based mmCIF label_seq_id for the prepared receptor chain R.
+# Missing experimental loops 102-107 (canonical 130-135) and 311-315
+# (canonical 339-343) are explicitly marked not-binding.
+
+entities:
+  - protein:
+      id: B
+      sequence: HAEGTFTSD19..23
+      cyclic: false
+
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # ECD anchors plus the native transmembrane-pocket footprint.
+            binding: 4,11,41,63,162,206,270..272,278,282,352,356,360
+            not_binding: 102..107,311..315
+      structure_groups: "all"
+
