@@ -1,0 +1,22 @@
+# Round 2: de novo peptide generation, using the pilot only to refine the
+# target epitope annotation. No pilot sequence or ligand backbone is provided.
+# Binding labels apply ONLY to receptor R, as required by BoltzGen.
+# They bias the sampled epitope, but do not constrain peptide N/C orientation.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # R190, Q234, T298/R299/N300, W306, R310, R380
+            # label_seq_id = canonical - 28
+            binding: 162,206,270..272,278,282,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
