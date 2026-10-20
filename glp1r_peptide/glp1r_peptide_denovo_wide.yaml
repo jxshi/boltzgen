@@ -1,0 +1,21 @@
+# Complementary de novo route: broader extracellular footprint and length range.
+# No fixed peptide sequence and no ligand-derived backbone.
+entities:
+  - protein:
+      id: B
+      sequence: 25..35
+      cyclic: false
+      binding_types:
+        binding: 1..8
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # canonical W39,Y69,W91,R190,Q234,T298,R299,N300,W306,R380
+            binding: 11,41,63,162,206,270..272,278,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
