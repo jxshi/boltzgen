@@ -1,0 +1,23 @@
+# Competition route: all peptide residues AND its backbone are generated anew.
+# No GLP-1 motif, ligand scaffold, or pilot candidate is supplied.
+# These binding labels are soft conditioning, NOT paired distance restraints.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+      binding_types:
+        binding: 1..8
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # canonical R190,Q234,W306,R380; label_seq_id = canonical - 28
+            binding: 162,206,278,352
+            # Experimentally unresolved loops, not physical blocking restraints.
+            not_binding: 102..107,311..315
+      structure_groups: "all"
