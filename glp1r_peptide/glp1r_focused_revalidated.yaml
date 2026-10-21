@@ -1,0 +1,22 @@
+# Post-round4 conservative baseline: remove the unsupported middle-helix hint.
+# Semantically identical to glp1r_focused.yaml; NOT a demonstrated hit-rate improvement.
+# Use only for a small reproducibility check, not a large production run.
+# No native/pilot peptide sequence or backbone template is supplied.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # Q234/W306/R380: label_seq_id = canonical receptor number - 28.
+            # Target hints do not specify which peptide terminus binds here.
+            binding: 206,278,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
