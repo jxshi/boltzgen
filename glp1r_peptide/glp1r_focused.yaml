@@ -1,0 +1,22 @@
+# Round 3 focused arm: de novo 28-32 aa peptide design.
+# This is an exploratory ablation: removing R190 from the binding hint does not
+# prohibit contact with R190 and does not impose peptide N/C orientation.
+# Binding labels apply ONLY to receptor R. No pilot sequence or ligand scaffold is supplied.
+# Label indices use canonical receptor numbering minus 28.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # Q234, W306, R380
+            binding: 206,278,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
