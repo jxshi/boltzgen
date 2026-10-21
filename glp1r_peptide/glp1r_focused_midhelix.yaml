@@ -1,0 +1,23 @@
+# Exploratory focused + middle-helix arm; compare with glp1r_focused.yaml.
+# Only the designed peptide secondary-structure hint changes.
+# Positions 8-24 (1-based, inclusive) are HELIX; all other positions are unspecified.
+# No native/pilot peptide sequence or backbone is fixed. Direction is not constrained.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+      secondary_structure:
+        helix: 8..24
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # Q234, W306, R380; label index = canonical number - 28.
+            binding: 206,278,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
