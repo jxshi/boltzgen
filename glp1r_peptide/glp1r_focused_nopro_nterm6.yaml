@@ -1,0 +1,27 @@
+# Exploratory sequence-constraint arm for comparison with glp1r_focused.yaml.
+# Rounds 6-10 showed an association between a Pro-free first six residues and
+# the retrospective native-like N-to-C geometry screen. This is a hypothesis,
+# not a validated agonist rule or a spatial restraint.
+# residue_constraints acts during inverse folding only; it does not orient the
+# peptide termini or constrain the diffusion-generated backbone. Keep the
+# inverse_folding step enabled and inspect inverse-folded/final sequences.
+entities:
+  - protein:
+      id: B
+      sequence: 28..32
+      cyclic: false
+      residue_constraints:
+        - position: 1..6
+          disallowed: P
+  - file:
+      path: reference/6X18_R_canonical.cif
+      include:
+        - chain:
+            id: R
+      binding_types:
+        - chain:
+            id: R
+            # Q234, W306, R380; label index = canonical number - 28.
+            binding: 206,278,352
+            not_binding: 102..107,311..315
+      structure_groups: "all"
